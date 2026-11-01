@@ -8,10 +8,12 @@ internal class FakeInvoiceRepository : IInvoiceRepository
 
     public FakeInvoiceRepository(params Invoice[] seed) => _invoices.AddRange(seed);
 
+    public List<Invoice> UpdatedInvoices { get; } = new();
+
     public IReadOnlyList<Invoice> GetAll() => _invoices.ToList();
     public Invoice? GetById(string id) => _invoices.FirstOrDefault(i => i.Id == id);
     public IReadOnlyList<Invoice> GetByIds(IEnumerable<string> ids) => _invoices.Where(i => ids.Contains(i.Id)).ToList();
     public Invoice Add(Invoice invoice) { _invoices.Add(invoice); return invoice; }
-    public void Update(Invoice invoice) { }
+    public void Update(Invoice invoice) => UpdatedInvoices.Add(invoice);
     public bool Remove(string id) => _invoices.RemoveAll(i => i.Id == id) > 0;
 }
