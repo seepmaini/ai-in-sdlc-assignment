@@ -36,3 +36,38 @@ Invoice approval demo app: ASP.NET Core 8 Web API with a small static web UI.
 
 - Commit real credentials, tokens or customer data.
 - Add business logic to `Program.cs` or controllers.
+
+## New Feature to Build - Approval Rules
+
+Add approval limits by role to the invoice approval service
+
+- A Manager may approve invoices up to 50,000.
+- A Director may approve invoices up to 500,000.
+- Anything above 500,000 needs two distinct approvers, and the second approver must be a director.
+- The same user may never count as both approvers on one invoice.
+- A rejected attempt returns a clear reason, and nothing about the invoice changes.
+
+## The Layering Rules
+
+- Follow the existing .NET architecture and layer boundaries.
+- Keep business logic in the appropriate service/application layer.
+- Add or update architecture tests to verify layer boundaries.
+
+## Test Commands
+
+- Build: dotnet build
+- Run all tests: dotnet test
+- Run tests after every relevant code change.
+- Fix failing tests before completing the task.
+
+## Review Expectations
+
+- List every finding with one of these verdicts:
+  - Fixed
+  - Dismissed with a reason
+  - Deffered with a reason
+- Include each finding's severity, file/location, explanation, and recommended fix.
+- Verify fixes against the updated diff and relevant tests.
+- Do not mark a finding as fixed without evidence.
+- Do not mark a finding as removed without a clear reason.
+- Summarize unresolved findings before declaring the review complete.

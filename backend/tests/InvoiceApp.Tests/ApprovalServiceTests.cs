@@ -34,7 +34,7 @@ public class ApprovalServiceTests
     {
         var service = ServiceFor(InvoiceWith("INV-1", InvoiceStatus.PendingApproval));
 
-        var result = service.Approve("INV-1", "demo.approver");
+        var result = service.Approve("INV-1", "demo.approver", "Approver");
 
         Assert.Equal(InvoiceStatus.Approved, result.Status);
         Assert.Equal("demo.approver", result.DecidedBy);
@@ -46,7 +46,7 @@ public class ApprovalServiceTests
     {
         var service = ServiceFor(InvoiceWith("INV-1", InvoiceStatus.Draft));
 
-        Assert.Throws<InvalidOperationException>(() => service.Approve("INV-1", "demo.approver"));
+        Assert.Throws<InvalidOperationException>(() => service.Approve("INV-1", "demo.approver", "Approver"));
     }
 
     [Fact]
@@ -54,7 +54,101 @@ public class ApprovalServiceTests
     {
         var service = ServiceFor();
 
-        Assert.Throws<KeyNotFoundException>(() => service.Approve("INV-404", "demo.approver"));
+        Assert.Throws<KeyNotFoundException>(() => service.Approve("INV-404", "demo.approver", "Approver"));
+    }
+
+    [Fact]
+    public void Approve_ManagerCanApproveInvoiceAtLimit()
+    {
+        var invoice = InvoiceWith("INV-1", InvoiceStatus.PendingApproval);
+        invoice.Amount = 50_000m;
+
+        var result = ServiceFor(invoice).Approve("INV-1", "demo.manager", "Manager");
+
+        Assert.Equal(InvoiceStatus.Approved, result.Status);
+        Assert.Equal("demo.manager", result.DecidedBy);
+        Assert.NotNull(result.DecidedAt);
+    }
+
+    [Fact]
+    public void Approve_ManagerCannotApproveAboveLimitAndLeavesInvoiceUnchanged()
+    {
+        var invoice = InvoiceWith("INV-1", InvoiceStatus.PendingApproval);
+        invoice.Amount = 50_000.01m;
+        invoice.DecisionNote = "Existing note";
+        var originalDecidedAt = DateTime.UtcNow.AddDays(-1);
+        invoice.DecidedBy = "previous.user";
+        invoice.DecidedAt = originalDecidedAt;
+
+        var exception = Assert.Throws<InvalidOperationException>(
+            () => ServiceFor(invoice).Approve("INV-1", "demo.manager", "Manager"));
+
+        Assert.Contains("50,000", exception.Message);
+        Assert.Equal(InvoiceStatus.PendingApproval, invoice.Status);
+        Assert.Equal("previous.user", invoice.DecidedBy);
+        Assert.Equal(originalDecidedAt, invoice.DecidedAt);
+        Assert.Equal("Existing note", invoice.DecisionNote);
+    }
+
+    [Fact]
+    public void Approve_DirectorCanApproveInvoiceAtLimit()
+    {
+        var invoice = InvoiceWith("INV-1", InvoiceStatus.PendingApproval);
+        invoice.Amount = 500_000m;
+
+        var result = ServiceFor(invoice).Approve("INV-1", "demo.director", "Director");
+
+        Assert.Equal(InvoiceStatus.Approved, result.Status);
+        Assert.Equal("demo.director", result.DecidedBy);
+        Assert.NotNull(result.DecidedAt);
+    }
+
+    [Theory]
+    [InlineData("Director")]
+    [InlineData("Approver")]
+    [InlineData("Admin")]
+    public void Approve_RejectsSingleApprovalAbove500000WithoutMutation(string role)
+    {
+        var invoice = InvoiceWith("INV-1", InvoiceStatus.PendingApproval);
+        invoice.Amount = 500_000.01m;
+
+        var exception = Assert.Throws<InvalidOperationException>(
+            () => ServiceFor(invoice).Approve("INV-1", "demo.user", role));
+
+        Assert.Contains("two distinct approvers", exception.Message);
+        Assert.Equal(InvoiceStatus.PendingApproval, invoice.Status);
+        Assert.Null(invoice.DecidedBy);
+        Assert.Null(invoice.DecidedAt);
+        Assert.Null(invoice.DecisionNote);
+    }
+
+    [Theory]
+    [InlineData("Approver")]
+    [InlineData("Admin")]
+    public void Approve_ExistingRolesCanApproveThrough500000(string role)
+    {
+        var invoice = InvoiceWith("INV-1", InvoiceStatus.PendingApproval);
+        invoice.Amount = 500_000m;
+
+        var result = ServiceFor(invoice).Approve("INV-1", "demo.user", role);
+
+        Assert.Equal(InvoiceStatus.Approved, result.Status);
+        Assert.Equal("demo.user", result.DecidedBy);
+    }
+
+    [Fact]
+    public void Approve_RejectsUnauthorizedRoleWithoutMutation()
+    {
+        var invoice = InvoiceWith("INV-1", InvoiceStatus.PendingApproval);
+        var service = ServiceFor(invoice);
+
+        var exception = Assert.Throws<InvalidOperationException>(
+            () => service.Approve("INV-1", "demo.viewer", "Viewer"));
+
+        Assert.Contains("not authorized", exception.Message);
+        Assert.Equal(InvoiceStatus.PendingApproval, invoice.Status);
+        Assert.Null(invoice.DecidedBy);
+        Assert.Null(invoice.DecidedAt);
     }
 
     [Fact]
