@@ -10,6 +10,8 @@ Invoice approval currently allows one approver to decide any pending invoice, re
 - Preserve existing Approver and Admin roles, allowing them to approve a single invoice through 500,000.
 - Require invoices above 500,000 to receive two approvals: an existing Approver or Admin may act first, and a distinct Director must provide the second approval.
 - Prevent one username from satisfying both approvals. Attempts that fail role, amount, or distinct-approver rules must return a clear reason and leave invoice state and decision data unchanged.
+- Show accessible approval progress for pending high-value invoices after the first approval, identifying the first approver and explaining that a different Director is required; enable the approval action only for an eligible second approver.
+- Clear session alerts and status messages on sign-out and successful sign-in, and refresh invoice state for the new session.
 - Preserve existing submission, rejection, and approval behavior outside these amount and role rules.
 
 ## Capabilities

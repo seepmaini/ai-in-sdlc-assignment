@@ -14,7 +14,7 @@ Invoice approval demo app: ASP.NET Core 8 Web API with a small static web UI.
 
 - Controllers live in `Controllers/`, one per resource, route `api/[controller]`. Request bodies are `record` types declared inside the controller.
 - Controllers inherit `ApiControllerBase` and use `Handle(...)` so service errors map to 404, 409 and 400.
-- Every endpoint is behind sign-in. Restrict actions with `[RequireRole("...")]`: destructive actions are Admin only, approvals are Approver or Admin.
+- Every endpoint is behind sign-in. Restrict actions with `[RequireRole("...")]`: destructive actions are Admin only; the approval action allows Approver, Admin, Manager, and Director, with amount and approval-sequence eligibility enforced by `ApprovalService`. Rejection remains limited to Approver and Admin.
 - Business rules go in the Domain project, never in controllers.
 - Register services in `Program.cs`. Repositories are interfaces in Domain with an in-memory implementation in Api.
 - Every new rule or endpoint needs tests. Use `FakeInvoiceRepository` in tests.
@@ -31,21 +31,21 @@ Invoice approval demo app: ASP.NET Core 8 Web API with a small static web UI.
 
 - `demo.approver` / `ChangeMe123!` (role Approver)
 - `demo.admin` / `ChangeMe123!` (role Admin)
+- `demo.manager` / `ChangeMe123!` (role Manager)
+- `demo.director` / `ChangeMe123!` (role Director)
 
 ## Never
 
 - Commit real credentials, tokens or customer data.
 - Add business logic to `Program.cs` or controllers.
 
-## New Feature to Build - Approval Rules
+## Approval Rules
 
-Add approval limits by role to the invoice approval service
-
-- A Manager may approve invoices up to 50,000.
-- A Director may approve invoices up to 500,000.
-- Anything above 500,000 needs two distinct approvers, and the second approver must be a director.
+- A Manager may approve invoices up to 50,000; a Director may approve invoices up to 500,000.
+- Approver and Admin retain single-approval authority through 500,000.
+- Invoices above 500,000 require an Approver or Admin first, followed by a distinct Director.
 - The same user may never count as both approvers on one invoice.
-- A rejected attempt returns a clear reason, and nothing about the invoice changes.
+- A rejected attempt returns a clear reason and does not change invoice data.
 
 ## The Layering Rules
 
