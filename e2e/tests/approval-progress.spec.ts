@@ -33,7 +33,8 @@ test('shows an over-limit approval rejection and leaves the invoice pending', as
 
   await page.getByRole('tab', { name: 'Invoices' }).click();
   const invoiceRow = page.getByRole('row').filter({ hasText: customerName });
-  await expect(invoiceRow.getByRole('cell').nth(3)).toHaveText('Pending Approval');
+  await expect(invoiceRow.getByRole('cell', { name: 'Pending Approval', exact: true })).toBeVisible();
+  await expect(invoiceRow.getByRole('cell', { name: '$50,000.01', exact: true })).toBeVisible();
 });
 
 test('requires a distinct Director to complete a high-value approval', async ({ page }) => {
@@ -56,7 +57,7 @@ test('requires a distinct Director to complete a high-value approval', async ({ 
 
   await page.getByRole('tab', { name: 'Invoices' }).click();
   const invoiceRow = page.getByRole('row').filter({ hasText: customerName });
-  await expect(invoiceRow.getByRole('cell').nth(3)).toHaveText('Approved');
+  await expect(invoiceRow.getByRole('cell', { name: 'Approved', exact: true })).toBeVisible();
 });
 
 test('disables approval for non-Directors after Admin records the first approval', async ({ page }) => {
@@ -95,5 +96,5 @@ test('disables approval for non-Directors after Admin records the first approval
 
   await page.getByRole('tab', { name: 'Invoices' }).click();
   const invoiceRow = page.getByRole('row').filter({ hasText: customerName });
-  await expect(invoiceRow.getByRole('cell').nth(3)).toHaveText('Approved');
+  await expect(invoiceRow.getByRole('cell', { name: 'Approved', exact: true })).toBeVisible();
 });

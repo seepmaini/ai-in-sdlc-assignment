@@ -40,19 +40,30 @@ public class ApprovalsControllerAuthorizationTests
         Assert.Equal(StatusCodes.Status403Forbidden, result.StatusCode);
     }
 
-    [Fact]
-    public void Reject_RemainsLimitedToApproverAndAdmin()
+    [Theory]
+    [InlineData("Approver")]
+    [InlineData("Admin")]
+    public void Reject_AllowsApproverAndAdmin(string role)
     {
-        var managerContext = CreateActionContext("Manager");
-        GetRoleFilter(nameof(ApprovalsController.Reject)).OnActionExecuting(managerContext);
+        var context = CreateActionContext(role);
 
-        var managerResult = Assert.IsType<StatusCodeResult>(managerContext.Result);
-        Assert.Equal(StatusCodes.Status403Forbidden, managerResult.StatusCode);
+        GetRoleFilter(nameof(ApprovalsController.Reject)).OnActionExecuting(context);
 
-        var approverContext = CreateActionContext("Approver");
-        GetRoleFilter(nameof(ApprovalsController.Reject)).OnActionExecuting(approverContext);
+        Assert.Null(context.Result);
+    }
 
-        Assert.Null(approverContext.Result);
+    [Theory]
+    [InlineData("Manager")]
+    [InlineData("Director")]
+    [InlineData("Viewer")]
+    public void Reject_RejectsRolesOtherThanApproverAndAdmin(string role)
+    {
+        var context = CreateActionContext(role);
+
+        GetRoleFilter(nameof(ApprovalsController.Reject)).OnActionExecuting(context);
+
+        var result = Assert.IsType<StatusCodeResult>(context.Result);
+        Assert.Equal(StatusCodes.Status403Forbidden, result.StatusCode);
     }
 
     [Fact]

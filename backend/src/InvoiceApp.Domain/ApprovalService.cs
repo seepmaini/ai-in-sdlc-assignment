@@ -2,7 +2,7 @@ namespace InvoiceApp.Domain;
 
 /// <summary>
 /// Moves an invoice through its lifecycle: Draft -> PendingApproval -> Approved or Rejected.
-/// One invoice at a time, decided as a whole by a single approver.
+/// Enforces amount-based approval limits and distinct approvals for high-value invoices.
 /// </summary>
 public class ApprovalService
 {

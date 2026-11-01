@@ -84,7 +84,12 @@ public class ApprovalServiceTests
             () => ServiceFor(invoice).Approve("INV-1", "demo.manager", "Manager"));
 
         Assert.Contains("50,000", exception.Message);
+        Assert.Equal("INV-1", invoice.Id);
+        Assert.Equal("Test School", invoice.CustomerName);
+        Assert.Equal(50_000.01m, invoice.Amount);
         Assert.Equal(InvoiceStatus.PendingApproval, invoice.Status);
+        Assert.Null(invoice.FirstApprovedBy);
+        Assert.Null(invoice.FirstApprovedAt);
         Assert.Equal("previous.user", invoice.DecidedBy);
         Assert.Equal(originalDecidedAt, invoice.DecidedAt);
         Assert.Equal("Existing note", invoice.DecisionNote);

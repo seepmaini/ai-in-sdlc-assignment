@@ -77,22 +77,17 @@
   function renderPending(pending) {
     show('pending-empty', pending.length === 0);
     $('pending-list').replaceChildren(...pending.map((invoice) => {
-      const reasonId = `reason-${invoice.id}`;
-      const approve = el('button', { type: 'button', 'aria-label': `Approve invoice ${invoice.id}` }, 'Approve');
-      if (invoice.firstApprovedBy) {
-        approve.disabled =
-          session.role !== 'Director' || invoice.firstApprovedBy === session.username;
+      const content = [el('span', {}, `${invoice.id} · ${invoice.customerName} · ${money.format(invoice.amount)}`)];
+
+      if (['Manager', 'Director', 'Approver', 'Admin'].includes(session.role)) {
+        const approve = el('button', { type: 'button', 'aria-label': `Approve invoice ${invoice.id}` }, 'Approve');
+        if (invoice.firstApprovedBy) {
+          approve.disabled =
+            session.role !== 'Director' || invoice.firstApprovedBy === session.username;
+        }
+        approve.addEventListener('click', () => decide(`/approvals/${invoice.id}/approve`, {}));
+        content.push(el('span', {}, approve));
       }
-      const reject = el('button', { type: 'button', class: 'danger', 'aria-label': `Reject invoice ${invoice.id}` }, 'Reject');
-      const reason = el('input', { id: reasonId, 'aria-label': `Rejection reason for ${invoice.id}`, placeholder: 'Reason (required to reject)' });
-
-      approve.addEventListener('click', () => decide(`/approvals/${invoice.id}/approve`, {}));
-      reject.addEventListener('click', () => decide(`/approvals/${invoice.id}/reject`, { reason: reason.value }));
-
-      const content = [
-        el('span', {}, `${invoice.id} · ${invoice.customerName} · ${money.format(invoice.amount)}`),
-        el('span', {}, approve),
-      ];
 
       if (invoice.firstApprovedBy) {
         content.push(el(
@@ -102,7 +97,14 @@
         ));
       }
 
-      content.push(el('div', { class: 'reject-row' }, reason, reject));
+      if (['Approver', 'Admin'].includes(session.role)) {
+        const reasonId = `reason-${invoice.id}`;
+        const reject = el('button', { type: 'button', class: 'danger', 'aria-label': `Reject invoice ${invoice.id}` }, 'Reject');
+        const reason = el('input', { id: reasonId, 'aria-label': `Rejection reason for ${invoice.id}`, placeholder: 'Reason (required to reject)' });
+        reject.addEventListener('click', () => decide(`/approvals/${invoice.id}/reject`, { reason: reason.value }));
+        content.push(el('div', { class: 'reject-row' }, reason, reject));
+      }
+
       return el('li', {}, ...content);
     }));
   }
