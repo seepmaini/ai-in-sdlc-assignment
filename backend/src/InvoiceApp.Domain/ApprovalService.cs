@@ -32,7 +32,48 @@ public class ApprovalService
     {
         var invoice = Find(invoiceId);
         EnsurePending(invoice);
+
+        if (invoice.Amount > 500_000m)
+        {
+            return ApproveHighValueInvoice(invoice, approver, role);
+        }
+
         EnsureRoleCanApprove(invoice, role);
+
+        invoice.Status = InvoiceStatus.Approved;
+        invoice.DecidedBy = approver;
+        invoice.DecidedAt = DateTime.UtcNow;
+        _repository.Update(invoice);
+        return invoice;
+    }
+
+    private Invoice ApproveHighValueInvoice(Invoice invoice, string approver, string role)
+    {
+        if (invoice.FirstApprovedBy is null)
+        {
+            if (role is not ("Approver" or "Admin"))
+            {
+                throw new InvalidOperationException(
+                    "Requires first approval by an Approver or an Admin  for an invoice above 500,000.");
+            }
+
+            invoice.FirstApprovedBy = approver;
+            invoice.FirstApprovedAt = DateTime.UtcNow;
+            _repository.Update(invoice);
+            return invoice;
+        }
+
+        if (role != "Director")
+        {
+            throw new InvalidOperationException(
+                "A Director must provide the second approval for an invoice above 500,000.");
+        }
+
+        if (string.Equals(invoice.FirstApprovedBy, approver, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                "The second approver must be a different user from the first approver.");
+        }
 
         invoice.Status = InvoiceStatus.Approved;
         invoice.DecidedBy = approver;

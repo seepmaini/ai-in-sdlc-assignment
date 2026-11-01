@@ -13,6 +13,7 @@ See [proposal.md](./proposal.md) for motivation and [specs/invoice-approval/spec
 - Keep role and amount decisions in the Domain service, with role and actor identity supplied by the API.
 - Represent an incomplete high-value approval without falsely marking the invoice decided.
 - Retain the existing `DecidedBy` and `DecidedAt` fields as the final decision record.
+- Explain the next approval step in the pending approvals view.
 - Ensure validation precedes mutation so rejected attempts preserve invoice state and audit data.
 
 **Non-Goals:**
@@ -38,6 +39,10 @@ See [proposal.md](./proposal.md) for motivation and [specs/invoice-approval/spec
 4. **Keep the role set backward-compatible.** Extend the approval endpoint's role allow-list with Manager and Director while retaining Approver and Admin. Continue using the existing configured-user role field; do not add demo passwords or alter existing role assignments as part of this feature.
 
 5. **Test the behavior at the layer that owns it.** Expand Domain service tests for amount boundaries, role eligibility, high-value sequencing, duplicate actors, rejection reasons, and unchanged invoice data. Add API authorization coverage for all allowed roles and an unauthorized role, plus an architecture test that protects the Domain/API dependency boundary. No architecture-test framework is currently present, so prefer a small test using the existing test project and project/assembly references over adding a dependency.
+
+6. **Show progress on pending high-value invoices.** Use the first approver data already returned with the invoice to render an accessible status message in the existing pending approvals view. Do not infer completion from an amount or add a separate endpoint.
+
+7. **Reset UI messages between sessions.** Clear alert and approval-progress messages on sign-out and successful sign-in. Refresh invoice data for the new session so still-relevant workflow progress is rendered from current server state rather than carried over as stale UI.
 
 ## Risks / Trade-offs
 

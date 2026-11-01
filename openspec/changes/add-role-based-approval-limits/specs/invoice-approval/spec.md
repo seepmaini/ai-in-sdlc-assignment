@@ -40,6 +40,12 @@ The system SHALL require an existing Approver or Admin to provide the first appr
 - **WHEN** an Approver or Admin approves a pending invoice for more than 500,000
 - **THEN** the first approval is recorded and the invoice remains pending
 
+#### Scenario: Pending high-value invoice explains its approval progress
+- **WHEN** a pending invoice has one recorded approval
+- **THEN** the pending approvals view identifies the first approver and explains that a different Director must approve it next
+- **AND** the approval action is disabled for any user who is not a different Director
+- **AND** the approval action is enabled for a different Director
+
 #### Scenario: Distinct Director completes high-value approval
 - **WHEN** a Director with a different username approves a high-value invoice that has its first approval recorded
 - **THEN** the invoice becomes approved and both approvers are recorded
@@ -62,3 +68,15 @@ The system SHALL return a clear reason when an approval attempt is rejected by a
 #### Scenario: Rejected attempt preserves invoice data
 - **WHEN** an approval attempt violates an approval rule
 - **THEN** the caller receives a clear rejection reason and no invoice data or persisted state is changed by that attempt
+
+### Requirement: Messages do not carry over between signed-in users
+The system SHALL clear messages displayed for one signed-in user when that user signs out or a different user successfully signs in.
+
+#### Scenario: Previous user's messages are cleared on sign out
+- **WHEN** a signed-in user signs out while messages are displayed
+- **THEN** those messages are cleared before another user signs in
+
+#### Scenario: Previous user's messages are cleared after successful sign in
+- **WHEN** a different user successfully signs in after a prior session displayed messages
+- **THEN** messages from the prior session are not displayed to the new user
+- **AND** current invoice state is refreshed and any relevant approval-progress message is rendered from that state

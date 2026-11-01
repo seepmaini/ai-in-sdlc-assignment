@@ -104,10 +104,9 @@ public class ApprovalServiceTests
     }
 
     [Theory]
+    [InlineData("Manager")]
     [InlineData("Director")]
-    [InlineData("Approver")]
-    [InlineData("Admin")]
-    public void Approve_RejectsSingleApprovalAbove500000WithoutMutation(string role)
+    public void Approve_RejectsUnauthorizedFirstApprovalAbove500000WithoutMutation(string role)
     {
         var invoice = InvoiceWith("INV-1", InvoiceStatus.PendingApproval);
         invoice.Amount = 500_000.01m;
@@ -115,11 +114,107 @@ public class ApprovalServiceTests
         var exception = Assert.Throws<InvalidOperationException>(
             () => ServiceFor(invoice).Approve("INV-1", "demo.user", role));
 
-        Assert.Contains("two distinct approvers", exception.Message);
+        Assert.Contains("first approval", exception.Message);
         Assert.Equal(InvoiceStatus.PendingApproval, invoice.Status);
+        Assert.Null(invoice.FirstApprovedBy);
+        Assert.Null(invoice.FirstApprovedAt);
         Assert.Null(invoice.DecidedBy);
         Assert.Null(invoice.DecidedAt);
         Assert.Null(invoice.DecisionNote);
+    }
+
+    [Theory]
+    [InlineData("Approver")]
+    [InlineData("Admin")]
+    public void Approve_RecordsFirstApprovalForHighValueInvoice(string role)
+    {
+        var invoice = InvoiceWith("INV-1", InvoiceStatus.PendingApproval);
+        invoice.Amount = 500_000.01m;
+
+        var result = ServiceFor(invoice).Approve("INV-1", "first.user", role);
+
+        Assert.Equal(InvoiceStatus.PendingApproval, result.Status);
+        Assert.Equal("first.user", result.FirstApprovedBy);
+        Assert.NotNull(result.FirstApprovedAt);
+        Assert.Null(result.DecidedBy);
+        Assert.Null(result.DecidedAt);
+    }
+
+    [Fact]
+    public void Approve_DistinctDirectorCompletesHighValueInvoice()
+    {
+        var invoice = InvoiceWith("INV-1", InvoiceStatus.PendingApproval);
+        invoice.Amount = 500_000.01m;
+        var service = ServiceFor(invoice);
+        service.Approve("INV-1", "first.user", "Approver");
+
+        var result = service.Approve("INV-1", "director.user", "Director");
+
+        Assert.Equal(InvoiceStatus.Approved, result.Status);
+        Assert.Equal("first.user", result.FirstApprovedBy);
+        Assert.NotNull(result.FirstApprovedAt);
+        Assert.Equal("director.user", result.DecidedBy);
+        Assert.NotNull(result.DecidedAt);
+    }
+
+    [Fact]
+    public void Approve_SameUserCannotProvideBothHighValueApprovals()
+    {
+        var invoice = InvoiceWith("INV-1", InvoiceStatus.PendingApproval);
+        invoice.Amount = 750_000m;
+        var service = ServiceFor(invoice);
+        service.Approve("INV-1", "same.user", "Admin");
+        var firstApprovedAt = invoice.FirstApprovedAt;
+
+        var exception = Assert.Throws<InvalidOperationException>(
+            () => service.Approve("INV-1", "same.user", "Director"));
+
+        Assert.Contains("different user", exception.Message);
+        Assert.Equal(InvoiceStatus.PendingApproval, invoice.Status);
+        Assert.Equal("same.user", invoice.FirstApprovedBy);
+        Assert.Equal(firstApprovedAt, invoice.FirstApprovedAt);
+        Assert.Null(invoice.DecidedBy);
+        Assert.Null(invoice.DecidedAt);
+    }
+
+    [Theory]
+    [InlineData("Approver")]
+    [InlineData("Admin")]
+    [InlineData("Manager")]
+    public void Approve_NonDirectorCannotCompleteHighValueApproval(string role)
+    {
+        var invoice = InvoiceWith("INV-1", InvoiceStatus.PendingApproval);
+        invoice.Amount = 600_000m;
+        var service = ServiceFor(invoice);
+        service.Approve("INV-1", "first.user", "Approver");
+        var firstApprovedAt = invoice.FirstApprovedAt;
+
+        var exception = Assert.Throws<InvalidOperationException>(
+            () => service.Approve("INV-1", "second.user", role));
+
+        Assert.Contains("Director", exception.Message);
+        Assert.Equal(InvoiceStatus.PendingApproval, invoice.Status);
+        Assert.Equal("first.user", invoice.FirstApprovedBy);
+        Assert.Equal(firstApprovedAt, invoice.FirstApprovedAt);
+        Assert.Null(invoice.DecidedBy);
+        Assert.Null(invoice.DecidedAt);
+    }
+
+    [Fact]
+    public void Approve_DirectorCannotCompleteHighValueInvoiceBeforeFirstApproval()
+    {
+        var invoice = InvoiceWith("INV-1", InvoiceStatus.PendingApproval);
+        invoice.Amount = 600_000m;
+
+        var exception = Assert.Throws<InvalidOperationException>(
+            () => ServiceFor(invoice).Approve("INV-1", "director.user", "Director"));
+
+        Assert.Contains("first approval", exception.Message);
+        Assert.Equal(InvoiceStatus.PendingApproval, invoice.Status);
+        Assert.Null(invoice.FirstApprovedBy);
+        Assert.Null(invoice.FirstApprovedAt);
+        Assert.Null(invoice.DecidedBy);
+        Assert.Null(invoice.DecidedAt);
     }
 
     [Theory]
