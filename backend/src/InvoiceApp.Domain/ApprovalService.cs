@@ -2,7 +2,7 @@ namespace InvoiceApp.Domain;
 
 /// <summary>
 /// Moves an invoice through its lifecycle: Draft -> PendingApproval -> Approved or Rejected.
-/// One invoice at a time, decided as a whole by a single approver.
+/// Enforces amount-based approval limits and distinct approvals for high-value invoices.
 /// </summary>
 public class ApprovalService
 {
@@ -28,16 +28,81 @@ public class ApprovalService
         return invoice;
     }
 
-    public Invoice Approve(string invoiceId, string approver)
+    public Invoice Approve(string invoiceId, string approver, string role)
     {
         var invoice = Find(invoiceId);
         EnsurePending(invoice);
+
+        if (invoice.Amount > 500_000m)
+        {
+            return ApproveHighValueInvoice(invoice, approver, role);
+        }
+
+        EnsureRoleCanApprove(invoice, role);
 
         invoice.Status = InvoiceStatus.Approved;
         invoice.DecidedBy = approver;
         invoice.DecidedAt = DateTime.UtcNow;
         _repository.Update(invoice);
         return invoice;
+    }
+
+    private Invoice ApproveHighValueInvoice(Invoice invoice, string approver, string role)
+    {
+        if (invoice.FirstApprovedBy is null)
+        {
+            if (role is not ("Approver" or "Admin"))
+            {
+                throw new InvalidOperationException(
+                    "Requires first approval by an Approver or an Admin  for an invoice above 500,000.");
+            }
+
+            invoice.FirstApprovedBy = approver;
+            invoice.FirstApprovedAt = DateTime.UtcNow;
+            _repository.Update(invoice);
+            return invoice;
+        }
+
+        if (role != "Director")
+        {
+            throw new InvalidOperationException(
+                "A Director must provide the second approval for an invoice above 500,000.");
+        }
+
+        if (string.Equals(invoice.FirstApprovedBy, approver, StringComparison.Ordinal))
+        {
+            throw new InvalidOperationException(
+                "The second approver must be a different user from the first approver.");
+        }
+
+        invoice.Status = InvoiceStatus.Approved;
+        invoice.DecidedBy = approver;
+        invoice.DecidedAt = DateTime.UtcNow;
+        _repository.Update(invoice);
+        return invoice;
+    }
+
+    private static void EnsureRoleCanApprove(Invoice invoice, string role)
+    {
+        var maximumAmount = role switch
+        {
+            "Manager" => 50_000m,
+            "Director" or "Approver" or "Admin" => 500_000m,
+            _ => throw new InvalidOperationException(
+                $"Role {role} is not authorized to approve invoices.")
+        };
+
+        if (invoice.Amount > 500_000m)
+        {
+            throw new InvalidOperationException(
+                "Invoices above 500,000 require two distinct approvers.");
+        }
+
+        if (invoice.Amount > maximumAmount)
+        {
+            throw new InvalidOperationException(
+                $"The {role} approval limit is {maximumAmount:N0}.");
+        }
     }
 
     public Invoice Reject(string invoiceId, string approver, string reason)

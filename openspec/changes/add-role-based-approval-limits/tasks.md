@@ -1,0 +1,29 @@
+# Tasks
+
+## 1. Domain Approval Policy
+
+- [x] 1.1 Implement role-aware single-approval limits in `ApprovalService`; verify via `ApprovalServiceTests` that a 50,000 Manager approval and 500,000 Director approval complete, while 50,000.01 Manager and any single approval above 500,000 are rejected without invoice mutation.
+- [x] 1.2 Implement the high-value two-approval transition and validate eligibility before mutation; verify tests that Approver/Admin first approval leaves the invoice pending, a different Director completes it, and same-user or wrong-role attempts return clear errors without changing invoice fields.
+- [x] 1.3 Preserve existing lifecycle behavior and test coverage; verify the existing submit, normal approval, and rejection tests still pass alongside new tests for Approver/Admin single approval through 500,000 and ineligible roles/amounts.
+
+## 2. API Role Wiring and Authorization
+
+- [x] 2.1 Pass the authenticated username and role from the session into the approval service and permit Manager/Director on the approval endpoint; permit all four approval roles to reject pending invoices.
+- [x] 2.2 Add API authorization tests for Manager, Director, Approver, Admin, and an unauthorized role; verify approval and rejection role gating.
+
+## 3. Layering and Integration Verification
+
+
+- [x] 3.1 Add an architecture test in the existing test setup that verifies the Domain project does not depend on the API/web layer and approval policy remains outside controllers and `Program.cs`; verify the architecture test passes without adding an unnecessary test framework.
+- [x] 3.2 Run the full solution test suite and build after the domain and API changes; verify `dotnet test backend/InvoiceApp.sln` and `dotnet build` succeed.
+
+## 4. Pending Approval Feedback
+
+- [x] 4.1 Show a status message naming the first approver and explaining that a different Director is required; verify with an end-to-end test using role-based locators after the first approval is recorded.
+- [x] 4.2 Clear previous session messages on logout and successful login; verify with an end-to-end test that a failed approval message is not shown to a different signed-in user.
+- [x] 4.3 Disable the second-approval action for non-Directors and the first approver; verify Manager/Approver see the disabled action while a different Director can complete the approval in the E2E test.
+
+## 5. Rejection Actions for All Approval Roles
+
+- [x] 5.1 Show rejection controls to Managers and Directors alongside approval controls; verify both roles can reject pending invoices in the end-to-end test.
+- [x] 5.2 Authorize Manager and Director rejection requests and cover the role policy in controller authorization tests.
