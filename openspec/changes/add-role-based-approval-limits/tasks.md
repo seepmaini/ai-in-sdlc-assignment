@@ -8,8 +8,8 @@
 
 ## 2. API Role Wiring and Authorization
 
-- [x] 2.1 Pass the authenticated username and role from the session into the approval service and permit Manager/Director on the approval endpoint only; verify unauthorized approval roles receive HTTP 403 and rejection remains limited to Approver/Admin.
-- [x] 2.2 Add API authorization tests using configured or test users for Manager, Director, Approver, Admin, and an unauthorized role; verify role gating is independent of amount-policy errors returned by the service.
+- [x] 2.1 Pass the authenticated username and role from the session into the approval service and permit Manager/Director on the approval endpoint; permit all four approval roles to reject pending invoices.
+- [x] 2.2 Add API authorization tests for Manager, Director, Approver, Admin, and an unauthorized role; verify approval and rejection role gating.
 
 ## 3. Layering and Integration Verification
 
@@ -22,3 +22,8 @@
 - [x] 4.1 Show a status message naming the first approver and explaining that a different Director is required; verify with an end-to-end test using role-based locators after the first approval is recorded.
 - [x] 4.2 Clear previous session messages on logout and successful login; verify with an end-to-end test that a failed approval message is not shown to a different signed-in user.
 - [x] 4.3 Disable the second-approval action for non-Directors and the first approver; verify Manager/Approver see the disabled action while a different Director can complete the approval in the E2E test.
+
+## 5. Rejection Actions for All Approval Roles
+
+- [x] 5.1 Show rejection controls to Managers and Directors alongside approval controls; verify both roles can reject pending invoices in the end-to-end test.
+- [x] 5.2 Authorize Manager and Director rejection requests and cover the role policy in controller authorization tests.

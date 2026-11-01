@@ -80,3 +80,14 @@ The system SHALL clear messages displayed for one signed-in user when that user 
 - **WHEN** a different user successfully signs in after a prior session displayed messages
 - **THEN** messages from the prior session are not displayed to the new user
 - **AND** current invoice state is refreshed and any relevant approval-progress message is rendered from that state
+
+### Requirement: All approval roles may reject pending invoices
+The system SHALL allow a Manager, Director, Approver, or Admin to reject a pending invoice. The pending approvals view SHALL show a Reject action alongside Approve for these roles, and the API SHALL authorize the same role set.
+
+#### Scenario: Manager rejects a pending invoice
+- **WHEN** a Manager rejects a pending invoice with a reason
+- **THEN** the invoice is rejected and the reason is recorded
+
+#### Scenario: Director rejects a pending invoice
+- **WHEN** a Director rejects a pending invoice with a reason
+- **THEN** the invoice is rejected and the reason is recorded

@@ -37,4 +37,10 @@ export class InvoiceApprovalsPage {
     await pendingInvoice.getByRole('button', { name: /Approve invoice/ }).click();
     return pendingInvoice;
   }
+
+  async rejectInvoiceForCustomer(customerName: string, reason: string) {
+    const pendingInvoice = this.page.getByRole('listitem').filter({ hasText: customerName });
+    await pendingInvoice.getByRole('textbox', { name: /Rejection reason/ }).fill(reason);
+    await pendingInvoice.getByRole('button', { name: /Reject invoice/ }).click();
+  }
 }

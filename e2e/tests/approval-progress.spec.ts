@@ -98,3 +98,30 @@ test('disables approval for non-Directors after Admin records the first approval
   const invoiceRow = page.getByRole('row').filter({ hasText: customerName });
   await expect(invoiceRow.getByRole('cell', { name: 'Approved', exact: true })).toBeVisible();
 });
+
+test('allows Managers and Directors to reject pending invoices', async ({ page }) => {
+  const approvalsPage = new InvoiceApprovalsPage(page);
+
+  await approvalsPage.open();
+
+  for (const account of [
+    { username: 'demo.manager', customerName: `Manager Reject ${Date.now()}` },
+    { username: 'demo.director', customerName: `Director Reject ${Date.now()}` }
+  ]) {
+    await approvalsPage.signIn(account.username, 'ChangeMe123!');
+    await approvalsPage.createInvoice(account.customerName, '100');
+    await approvalsPage.submitInvoiceForCustomer(account.customerName);
+    await approvalsPage.openPendingApprovals();
+
+    const pendingInvoice = page.getByRole('listitem').filter({ hasText: account.customerName });
+    await expect(pendingInvoice.getByRole('button', { name: /Approve invoice/ })).toBeVisible();
+    await expect(pendingInvoice.getByRole('button', { name: /Reject invoice/ })).toBeVisible();
+
+    await approvalsPage.rejectInvoiceForCustomer(account.customerName, 'Not payable');
+
+    await page.getByRole('tab', { name: 'Invoices' }).click();
+    const invoiceRow = page.getByRole('row').filter({ hasText: account.customerName });
+    await expect(invoiceRow.getByRole('cell', { name: 'Rejected', exact: true })).toBeVisible();
+    await approvalsPage.signOut();
+  }
+});

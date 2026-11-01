@@ -18,7 +18,7 @@ See [proposal.md](./proposal.md) for motivation and [specs/invoice-approval/spec
 
 **Non-Goals:**
 
-- Change sign-in, token, invoice submission, or invoice rejection flows.
+- Change sign-in, token, or invoice submission flows.
 - Add a persistence provider, database migration, or new credentials for demo users.
 - Change single-approval behavior for existing Approver and Admin roles through 500,000.
 
@@ -36,13 +36,15 @@ See [proposal.md](./proposal.md) for motivation and [specs/invoice-approval/spec
 
    Alternatives considered: comparing display names or role values would not establish distinct identities; adding a new identity system is outside this change.
 
-4. **Keep the role set backward-compatible.** Extend the approval endpoint's role allow-list with Manager and Director while retaining Approver and Admin. Continue using the existing configured-user role field; do not add demo passwords or alter existing role assignments as part of this feature.
+4. **Apply the approval role set to rejection actions.** Permit Manager and Director to reject pending invoices alongside Approver and Admin, and expose the rejection controls for all four roles. Keep authentication and role checks in the API, and continue using the existing configured-user role field; do not add demo passwords or alter existing role assignments as part of this feature.
 
 5. **Test the behavior at the layer that owns it.** Expand Domain service tests for amount boundaries, role eligibility, high-value sequencing, duplicate actors, rejection reasons, and unchanged invoice data. Add API authorization coverage for all allowed roles and an unauthorized role, plus an architecture test that protects the Domain/API dependency boundary. No architecture-test framework is currently present, so prefer a small test using the existing test project and project/assembly references over adding a dependency.
 
 6. **Show progress on pending high-value invoices.** Use the first approver data already returned with the invoice to render an accessible status message in the existing pending approvals view. Do not infer completion from an amount or add a separate endpoint.
 
 7. **Reset UI messages between sessions.** Clear alert and approval-progress messages on sign-out and successful sign-in. Refresh invoice data for the new session so still-relevant workflow progress is rendered from current server state rather than carried over as stale UI.
+
+8. **Keep rejection available to all approval roles.** The approvals view shows both Approve and Reject actions to Managers and Directors. The rejection endpoint authorizes the same four roles as approval so the UI does not offer a forbidden action.
 
 ## Risks / Trade-offs
 

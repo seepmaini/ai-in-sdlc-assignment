@@ -97,7 +97,7 @@
         ));
       }
 
-      if (['Approver', 'Admin'].includes(session.role)) {
+      if (['Manager', 'Director', 'Approver', 'Admin'].includes(session.role)) {
         const reasonId = `reason-${invoice.id}`;
         const reject = el('button', { type: 'button', class: 'danger', 'aria-label': `Reject invoice ${invoice.id}` }, 'Reject');
         const reason = el('input', { id: reasonId, 'aria-label': `Rejection reason for ${invoice.id}`, placeholder: 'Reason (required to reject)' });

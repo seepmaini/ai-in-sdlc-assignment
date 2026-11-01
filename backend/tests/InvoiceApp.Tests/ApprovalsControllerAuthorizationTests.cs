@@ -41,9 +41,11 @@ public class ApprovalsControllerAuthorizationTests
     }
 
     [Theory]
+    [InlineData("Manager")]
+    [InlineData("Director")]
     [InlineData("Approver")]
     [InlineData("Admin")]
-    public void Reject_AllowsApproverAndAdmin(string role)
+    public void Reject_AllowsApprovalRoles(string role)
     {
         var context = CreateActionContext(role);
 
@@ -53,10 +55,8 @@ public class ApprovalsControllerAuthorizationTests
     }
 
     [Theory]
-    [InlineData("Manager")]
-    [InlineData("Director")]
     [InlineData("Viewer")]
-    public void Reject_RejectsRolesOtherThanApproverAndAdmin(string role)
+    public void Reject_RejectsUnauthorizedRole(string role)
     {
         var context = CreateActionContext(role);
 
