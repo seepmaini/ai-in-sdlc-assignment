@@ -18,6 +18,24 @@ test('shows the next required approver after the first high-value approval', asy
   );
 });
 
+test('shows an over-limit approval rejection and leaves the invoice pending', async ({ page }) => {
+  const approvalsPage = new InvoiceApprovalsPage(page);
+  const customerName = `Over Limit Approval ${Date.now()}`;
+
+  await approvalsPage.open();
+  await approvalsPage.signIn('demo.manager', 'ChangeMe123!');
+  await approvalsPage.createInvoice(customerName, '50000.01');
+  await approvalsPage.submitInvoiceForCustomer(customerName);
+  await approvalsPage.openPendingApprovals();
+  await approvalsPage.approveInvoiceForCustomer(customerName);
+
+  await expect(page.getByRole('alert')).toHaveText('The Manager approval limit is 50,000.');
+
+  await page.getByRole('tab', { name: 'Invoices' }).click();
+  const invoiceRow = page.getByRole('row').filter({ hasText: customerName });
+  await expect(invoiceRow.getByRole('cell').nth(3)).toHaveText('Pending Approval');
+});
+
 test('requires a distinct Director to complete a high-value approval', async ({ page }) => {
   const approvalsPage = new InvoiceApprovalsPage(page);
   const customerName = `Two Approver Completion ${Date.now()}`;
